@@ -13,16 +13,18 @@ def extract_data(text):
     phones = re.findall(r'\b\d{10}\b', text)
     return links, upi_ids, phones
 
-@app.post("/honeypot")
+@app.post("/honeypot", include_in_schema=True)
 async def honeypot(request: Request, x_api_key: str = Header(None)):
 
-    # API key check
+    # API key validation
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
-    # Safely read JSON
+    # Safely handle ANY body (or no body)
     try:
         data = await request.json()
+        if not isinstance(data, dict):
+            data = {}
     except:
         data = {}
 
