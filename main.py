@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Body
 from pydantic import BaseModel
 import re
 
@@ -15,11 +15,14 @@ class HoneyPotRequest(BaseModel):
 def extract_phone_numbers(text: str):
     return re.findall(r"\b\d{10}\b", text)
 
+
 def extract_upi_ids(text: str):
     return re.findall(r"[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}", text)
 
+
 def extract_links(text: str):
     return re.findall(r"https?://\S+", text)
+
 
 def detect_keywords(text: str):
     keywords = ["otp", "bank", "account", "verify", "urgent", "blocked"]
@@ -28,14 +31,14 @@ def detect_keywords(text: str):
 
 @app.post("/honeypot")
 def honeypot(
-    payload: Optional[HoneyPotRequest] = None,
+    payload: Optional[HoneyPotRequest] = Body(None),
     x_api_key: str = Header(...)
 ):
-
+    # API key validation
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
-
+    # Handle empty body safely (GUVI fix)
     message = payload.message if payload and payload.message else ""
 
     if message.strip() == "":
@@ -50,7 +53,6 @@ def honeypot(
                 "phone_numbers": []
             }
         }
-
 
     detected_keywords = detect_keywords(message)
     phone_numbers = extract_phone_numbers(message)
@@ -76,3 +78,4 @@ def honeypot(
 @app.get("/")
 def health():
     return {"status": "alive"}
+
